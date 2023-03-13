@@ -37,7 +37,6 @@ class Scraper:
                 }
 
                 selected_proxy = random.choice(self.proxies)
-                print(selected_proxy)
                 proxy = f'http://{selected_proxy}'
 
                 async with s.get(url, headers=headers, proxy=proxy) as r:
@@ -56,7 +55,7 @@ class Scraper:
 
         async def main(self, keyword):
                 urls = list()
-                for page in range(1,20):
+                for page in range(1,3):
                         url = f'https://www.willhaben.at/iad/kaufen-und-verkaufen/marktplatz?sfId=8ef62b18-a054-404c-8f50-f28cd3ce1a00&isNavigation=true&keyword={keyword}&rows=90&page={page}'
                         urls.append(url)
                 print(urls)
@@ -66,6 +65,7 @@ class Scraper:
                 return htmls
 
         def parser(self, htmls):
+                product_list = list()
                 for html in htmls:
                         tree = HTMLParser(html)
                         stage1 = tree.css('#skip-to-resultlist > div.jYFQjC')
@@ -89,8 +89,8 @@ class Scraper:
                                                 )
                                         except:
                                                 continue
-                                print(asdict(new_item))
-
+                                product_list.append(asdict(new_item))
+                return product_list
 
 if __name__ == '__main__':
         proxies = [
@@ -118,6 +118,8 @@ if __name__ == '__main__':
         start = perf_counter()
         s = Scraper(proxies=proxies, useragent=useragent)
         htmls = asyncio.run(s.main(keyword=keyword))
-        s.parser(htmls)
+        result = s.parser(htmls)
+        print(result)
+        print(len(result))
         stop = perf_counter()
         print(f'time taken: {stop - start}')
