@@ -79,7 +79,16 @@ class Scraper:
                                                 size = item.css_first('div:nth-child(2) > div:nth-child(2) > div:nth-child(3)').text()
                                         )
                                 except:
-                                        continue
+                                        try:
+                                                new_item = Product(
+                                                        name=item.css_first('h3').text(),
+                                                        img=item.css_first('img[alt="Cover Image"]').attributes['src'],
+                                                        link=self.baseurl + item.css_first('a').attributes['href'],
+                                                        price=item.css_first('div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > span:nth-child(1)').text(),
+                                                        size=item.css_first('div:nth-child(2) > div:nth-child(2) > span:nth-child(1)').text()
+                                                )
+                                        except:
+                                                continue
                                 print(asdict(new_item))
 
 
@@ -105,7 +114,7 @@ if __name__ == '__main__':
                 'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.92 Safari/537.36 Ubuntu/22.04 (5.2.2623.34-1) Vivaldi/5.2.2623.34'
         ]
 
-        keyword = 'kamera'
+        keyword = 'Kindermode'
         start = perf_counter()
         s = Scraper(proxies=proxies, useragent=useragent)
         htmls = asyncio.run(s.main(keyword=keyword))
