@@ -5,6 +5,8 @@ import asyncio
 import random
 from time import perf_counter
 from typing import List
+import json
+import pprint
 
 @dataclass
 class Product:
@@ -39,7 +41,8 @@ class Scraper:
                 selected_proxy = random.choice(self.proxies)
                 proxy = f'http://{selected_proxy}'
 
-                async with s.get(url, headers=headers, proxy=proxy) as r:
+                # async with s.get(url, headers=headers, proxy=proxy) as r:
+                async with s.get(url, headers=headers) as r:
                         if r.status != 200:
                                 r.raise_for_status()
 
@@ -55,7 +58,7 @@ class Scraper:
 
         async def main(self, keyword):
                 urls = list()
-                for page in range(1,3):
+                for page in range(1,2):
                         url = f'https://www.willhaben.at/iad/kaufen-und-verkaufen/marktplatz?sfId=8ef62b18-a054-404c-8f50-f28cd3ce1a00&isNavigation=true&keyword={keyword}&rows=90&page={page}'
                         urls.append(url)
                 print(urls)
@@ -68,28 +71,29 @@ class Scraper:
                 product_list = list()
                 for html in htmls:
                         tree = HTMLParser(html)
-                        stage1 = tree.css('#skip-to-resultlist > div.jYFQjC')
-                        for item in stage1:
-                                try:
-                                        new_item = Product(
-                                                name = item.css_first('h3').text(),
-                                                img = item.css_first('img[alt="Cover Image"]').attributes['src'],
-                                                link = self.baseurl + item.css_first('a').attributes['href'],
-                                                price = item.css_first('div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > span:nth-child(1)').text(),
-                                                size = item.css_first('div:nth-child(2) > div:nth-child(2) > div:nth-child(3)').text()
-                                        )
-                                except:
-                                        try:
-                                                new_item = Product(
-                                                        name=item.css_first('h3').text(),
-                                                        img=item.css_first('img[alt="Cover Image"]').attributes['src'],
-                                                        link=self.baseurl + item.css_first('a').attributes['href'],
-                                                        price=item.css_first('div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > span:nth-child(1)').text(),
-                                                        size=item.css_first('div:nth-child(2) > div:nth-child(2) > span:nth-child(1)').text()
-                                                )
-                                        except:
-                                                continue
-                                product_list.append(asdict(new_item))
+                        json_data = json.loads(tree.css_first('script#__NEXT_DATA__').text())
+                        pprint.pprint(json_data, indent=1)
+                        # for item in stage1:
+                        #         try:
+                        #                 new_item = Product(
+                        #                         name = item.css_first('h3').text(),
+                        #                         img = item.css_first('img[alt="Cover Image"]').attributes['src'],
+                        #                         link = self.baseurl + item.css_first('a').attributes['href'],
+                        #                         price = item.css_first('div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > span:nth-child(1)').text(),
+                        #                         size = item.css_first('div:nth-child(2) > div:nth-child(2) > div:nth-child(3)').text()
+                        #                 )
+                        #         except:
+                        #                 try:
+                        #                         new_item = Product(
+                        #                                 name=item.css_first('h3').text(),
+                        #                                 img=item.css_first('img[alt="Cover Image"]').attributes['src'],
+                        #                                 link=self.baseurl + item.css_first('a').attributes['href'],
+                        #                                 price=item.css_first('div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > span:nth-child(1)').text(),
+                        #                                 size=item.css_first('div:nth-child(2) > div:nth-child(2) > span:nth-child(1)').text()
+                        #                         )
+                        #                 except:
+                        #                         continue
+                        #         product_list.append(asdict(new_item))
                 return product_list
 
 if __name__ == '__main__':
@@ -117,6 +121,7 @@ if __name__ == '__main__':
         keyword = 'Kindermode'
         start = perf_counter()
         s = Scraper(proxies=proxies, useragent=useragent)
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         htmls = asyncio.run(s.main(keyword=keyword))
         result = s.parser(htmls)
         print(result)
