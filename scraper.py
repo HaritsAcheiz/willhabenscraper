@@ -1,6 +1,6 @@
 import aiohttp
 from selectolax.parser import HTMLParser
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 import asyncio
 import random
 from time import perf_counter
@@ -20,8 +20,25 @@ class Product:
 
 @dataclass
 class Scraper:
-        proxies: List[str]
-        useragent: List[str]
+        proxies: List[str] = field(default_factory=lambda:[
+                '142.214.181.36:8800',
+                '142.214.181.241:8800',
+                '196.51.116.40:8800',
+                '196.51.114.196:8800',
+                '142.214.181.41:8800',
+                '196.51.116.171:8800',
+                '142.214.181.219:8800',
+                '142.214.183.243:8800',
+                '196.51.114.248:8800',
+                '142.214.183.70:8800'
+        ])
+        useragent: List[str] = field(default_factory=lambda:[
+                'Mozilla/5.0 (Wayland; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.137 Safari/537.36 Ubuntu/22.04 (5.0.2497.35-1) Vivaldi/5.0.2497.35',
+                'Mozilla/5.0 (Wayland; Linux x86_64; System76 Galago Pro (galp2)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.175 Safari/537.36 Ubuntu/22.04 (5.0.2497.48-1) Vivaldi/5.0.2497.48',
+                'Mozilla/5.0 (Wayland; Linux x86_64; System76 Galago Pro (galp2)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.175 Safari/537.36 Ubuntu/22.04 (5.0.2497.51-1) Vivaldi/5.0.2497.51,',
+                'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.133 Safari/537.36 Ubuntu/22.04 (5.2.2623.34-1) Vivaldi/5.2.2623.39',
+                'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.92 Safari/537.36 Ubuntu/22.04 (5.2.2623.34-1) Vivaldi/5.2.2623.34'
+        ])
         baseurl: str = 'https://www.willhaben.at'
 
         async def fetch(self, s, url):
@@ -58,7 +75,8 @@ class Scraper:
                 res = await asyncio.gather(*tasks)
                 return res
 
-        async def main(self, keyword):
+        # async def run(self, keyword):
+        async def run(self):
                 urls = list()
                 for page in range(1,20):
                         # url = f'https://www.willhaben.at/iad/kaufen-und-verkaufen/marktplatz?sfId=8ef62b18-a054-404c-8f50-f28cd3ce1a00&isNavigation=true&keyword={keyword}&rows=90&page={page}'
@@ -107,36 +125,45 @@ class Scraper:
                                 product_list.append(asdict(new_item))
                 return product_list
 
-if __name__ == '__main__':
-        proxies = [
-                '142.214.181.36:8800',
-                '142.214.181.241:8800',
-                '196.51.116.40:8800',
-                '196.51.114.196:8800',
-                '142.214.181.41:8800',
-                '196.51.116.171:8800',
-                '142.214.181.219:8800',
-                '142.214.183.243:8800',
-                '196.51.114.248:8800',
-                '142.214.183.70:8800'
-        ]
+        def main(self):
+                # keyword = 'Kindermode'
+                # htmls = asyncio.run(self.run(keyword=keyword))
+                htmls = asyncio.run(self.run())
+                return self.parser(htmls)
 
-        useragent = [
-                'Mozilla/5.0 (Wayland; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.137 Safari/537.36 Ubuntu/22.04 (5.0.2497.35-1) Vivaldi/5.0.2497.35',
-                'Mozilla/5.0 (Wayland; Linux x86_64; System76 Galago Pro (galp2)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.175 Safari/537.36 Ubuntu/22.04 (5.0.2497.48-1) Vivaldi/5.0.2497.48',
-                'Mozilla/5.0 (Wayland; Linux x86_64; System76 Galago Pro (galp2)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.175 Safari/537.36 Ubuntu/22.04 (5.0.2497.51-1) Vivaldi/5.0.2497.51,',
-                'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.133 Safari/537.36 Ubuntu/22.04 (5.2.2623.34-1) Vivaldi/5.2.2623.39',
-                'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.92 Safari/537.36 Ubuntu/22.04 (5.2.2623.34-1) Vivaldi/5.2.2623.34'
-        ]
-
-        keyword = 'Kindermode'
-        start = perf_counter()
-        s = Scraper(proxies=proxies, useragent=useragent)
+# if __name__ == '__main__':
+#         proxies = [
+#                 '142.214.181.36:8800',
+#                 '142.214.181.241:8800',
+#                 '196.51.116.40:8800',
+#                 '196.51.114.196:8800',
+#                 '142.214.181.41:8800',
+#                 '196.51.116.171:8800',
+#                 '142.214.181.219:8800',
+#                 '142.214.183.243:8800',
+#                 '196.51.114.248:8800',
+#                 '142.214.183.70:8800'
+#         ]
+#
+#         useragent = [
+#                 'Mozilla/5.0 (Wayland; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.137 Safari/537.36 Ubuntu/22.04 (5.0.2497.35-1) Vivaldi/5.0.2497.35',
+#                 'Mozilla/5.0 (Wayland; Linux x86_64; System76 Galago Pro (galp2)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.175 Safari/537.36 Ubuntu/22.04 (5.0.2497.48-1) Vivaldi/5.0.2497.48',
+#                 'Mozilla/5.0 (Wayland; Linux x86_64; System76 Galago Pro (galp2)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.175 Safari/537.36 Ubuntu/22.04 (5.0.2497.51-1) Vivaldi/5.0.2497.51,',
+#                 'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.133 Safari/537.36 Ubuntu/22.04 (5.2.2623.34-1) Vivaldi/5.2.2623.39',
+#                 'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.92 Safari/537.36 Ubuntu/22.04 (5.2.2623.34-1) Vivaldi/5.2.2623.34'
+#         ]
+#
+#         keyword = 'Kindermode'
+        # start = perf_counter()
+        # s = Scraper(proxies=proxies, useragent=useragent)
         # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-        htmls = asyncio.run(s.main(keyword=keyword))
-        result = s.parser(htmls)
-        for i in result:
-                print(i)
-        print(len(result))
-        stop = perf_counter()
-        print(f'time taken: {stop - start}')
+        # htmls = asyncio.run(s.main(keyword=keyword))
+        # result = s.parser(htmls)
+        # for i in result:
+        #         print(i)
+        # print(len(result))
+        # stop = perf_counter()
+        # print(f'time taken: {stop - start}')
+        # s = Scraper()
+        # result = s.main()
+        # print(result)
