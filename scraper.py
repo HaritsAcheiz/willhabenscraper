@@ -61,7 +61,7 @@ class Scraper:
                 proxy = f'http://{selected_proxy}'
 
                 async with s.get(url, headers=headers) as r:
-                # async with s.get(url, headers=headers) as r:
+                # async with s.get(url, headers=headers, proxy=proxy) as r:
                         if r.status != 200:
                                 r.raise_for_status()
 
