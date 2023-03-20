@@ -6,6 +6,7 @@ import random
 from time import perf_counter
 from typing import List
 import json
+import requests
 
 @dataclass
 class Product:
@@ -20,18 +21,21 @@ class Product:
 
 @dataclass
 class Scraper:
-        proxies: List[str] = field(default_factory=lambda:[
-                '142.214.181.36:8800',
-                '142.214.181.241:8800',
-                '196.51.116.40:8800',
-                '196.51.114.196:8800',
-                '142.214.181.41:8800',
-                '196.51.116.171:8800',
-                '142.214.181.219:8800',
-                '142.214.183.243:8800',
-                '196.51.114.248:8800',
-                '142.214.183.70:8800'
-        ])
+        # proxies: List[str] = field(default_factory=lambda:[
+        #         '142.214.181.36:8800',
+        #         '142.214.181.241:8800',
+        #         '196.51.116.40:8800',
+        #         '196.51.114.196:8800',
+        #         '142.214.181.41:8800',
+        #         '196.51.116.171:8800',
+        #         '142.214.181.219:8800',
+        #         '142.214.183.243:8800',
+        #         '196.51.114.248:8800',
+        #         '142.214.183.70:8800'
+        # ])
+
+        proxies: List[str] = None
+
         useragent: List[str] = field(default_factory=lambda:[
                 'Mozilla/5.0 (Wayland; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.137 Safari/537.36 Ubuntu/22.04 (5.0.2497.35-1) Vivaldi/5.0.2497.35',
                 'Mozilla/5.0 (Wayland; Linux x86_64; System76 Galago Pro (galp2)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.175 Safari/537.36 Ubuntu/22.04 (5.0.2497.48-1) Vivaldi/5.0.2497.48',
@@ -60,8 +64,8 @@ class Scraper:
                 selected_proxy = random.choice(self.proxies)
                 proxy = f'http://{selected_proxy}'
 
-                async with s.get(url, headers=headers) as r:
-                # async with s.get(url, headers=headers, proxy=proxy) as r:
+                # async with s.get(url, headers=headers) as r:
+                async with s.get(url, headers=headers, proxy=proxy) as r:
                         if r.status != 200:
                                 r.raise_for_status()
 
@@ -125,13 +129,82 @@ class Scraper:
                                 product_list.append(asdict(new_item))
                 return product_list
 
+        def get_proxy(self):
+                print("Collecting proxies...")
+                with requests.Session() as s:
+                        response = s.get('https://free-proxy-list.net/')
+                tree = HTMLParser(response.text)
+                list_data = tree.css('table.table.table-striped.table-bordered > tbody > tr')
+                scraped_proxies = []
+                blocked_cc = ['IR', 'RU']
+                for i in list_data:
+                        ip = i.css_first('tr > td:nth-child(1)').text()
+                        port = i.css_first('tr > td:nth-child(2)').text()
+                        cc = i.css_first('tr > td:nth-child(3)').text()
+                        if cc in blocked_cc:
+                                continue
+                        else:
+                                scraped_proxies.append(f'{ip}:{port}')
+                print(f"{len(scraped_proxies)} proxies collected")
+                print(scraped_proxies)
+                return scraped_proxies
+
+        async def proxy_check(self, s, scraped_proxy):
+            ua = random.choice(self.useragent)
+            headers = {
+                'User-Agent': ua,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Sec-Fetch-User': '?1'
+                }
+            proxy = f'http://{scraped_proxy}'
+            try:
+                    async with s.get('https://www.willhaben.at', headers=headers, proxy=proxy, timeout=7) as r:
+                            if r.status != 200:
+                                    r.raise_for_status()
+                                    return 'Null'
+                            else:
+                                    print(f'{scraped_proxy} selected')
+                                    return scraped_proxy
+            except Exception as e:
+                print(f"not working with {e}")
+                return 'Null'
+
+        async def all_proxy_check(self, s, scraped_proxies):
+                tasks = list()
+                for i, scraped_proxy in enumerate(scraped_proxies):
+                        task = asyncio.create_task(self.proxy_check(s,scraped_proxy))
+                        tasks.append(task)
+                res = await asyncio.gather(*tasks)
+                return res
+
+        async def choose_proxy(self):
+                scraped_proxies = self.get_proxy()
+                working_proxies = list()
+                session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=7,
+                                                        sock_read=10)
+                async with aiohttp.ClientSession(timeout=session_timeout) as s:
+                        working_proxies = await self.all_proxy_check(s, scraped_proxies)
+                return working_proxies
+
         def main(self):
                 # keyword = 'Kindermode'
                 # htmls = asyncio.run(self.run(keyword=keyword))
+                proxies = asyncio.run(self.choose_proxy())
+                proxies = [value for value in proxies if value != 'Null']
+                print(proxies)
+                # proxies = ['103.121.149.69:8080', '146.56.136.237:9090', '43.132.184.228:8181', '88.255.217.37:8080', '140.120.15.146:8088']
+                self.proxies=proxies
                 htmls = asyncio.run(self.run())
                 return self.parser(htmls)
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
 #         proxies = [
 #                 '142.214.181.36:8800',
 #                 '142.214.181.241:8800',
@@ -154,7 +227,7 @@ class Scraper:
 #         ]
 #
 #         keyword = 'Kindermode'
-        # start = perf_counter()
+        start = perf_counter()
         # s = Scraper(proxies=proxies, useragent=useragent)
         # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         # htmls = asyncio.run(s.main(keyword=keyword))
@@ -162,8 +235,8 @@ class Scraper:
         # for i in result:
         #         print(i)
         # print(len(result))
-        # stop = perf_counter()
-        # print(f'time taken: {stop - start}')
-        # s = Scraper()
-        # result = s.main()
-        # print(result)
+        s = Scraper()
+        result = s.main()
+        print(result)
+        stop = perf_counter()
+        print(f'time taken: {stop - start}')
