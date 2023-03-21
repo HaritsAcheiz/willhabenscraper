@@ -61,11 +61,12 @@ class Scraper:
                         'Sec-Fetch-User': '?1'
                 }
 
-                selected_proxy = random.choice(self.proxies)
+                # selected_proxy = random.choice(self.proxies)
+                selected_proxy = self.proxies[0]
                 proxy = f'http://{selected_proxy}'
 
                 # async with s.get(url, headers=headers) as r:
-                async with s.get(url, headers=headers, proxy=proxy) as r:
+                async with s.get(url, headers=headers, proxy=proxy, timeout=7) as r:
                         if r.status != 200:
                                 r.raise_for_status()
 
@@ -87,7 +88,8 @@ class Scraper:
                         url = f'https://www.willhaben.at/iad/kaufen-und-verkaufen/marktplatz?sfId=2b8dd095-db9f-487f-b2a8-c595d89c1aec&isNavigation=true&page={page}&rows=90'
                         urls.append(url)
 
-                async with aiohttp.ClientSession() as s:
+                session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=7, sock_read=10)
+                async with aiohttp.ClientSession(timeout=session_timeout) as s:
                         htmls = await self.fetch_all(s, urls)
                 return htmls
 
@@ -130,7 +132,7 @@ class Scraper:
                 return product_list
 
         def get_proxy(self):
-                print("Collecting proxies...")
+                # print("Collecting proxies...")
                 with requests.Session() as s:
                         response = s.get('https://free-proxy-list.net/')
                 tree = HTMLParser(response.text)
@@ -145,8 +147,8 @@ class Scraper:
                                 continue
                         else:
                                 scraped_proxies.append(f'{ip}:{port}')
-                print(f"{len(scraped_proxies)} proxies collected")
-                print(scraped_proxies)
+                # print(f"{len(scraped_proxies)} proxies collected")
+                # print(scraped_proxies)
                 return scraped_proxies
 
         async def proxy_check(self, s, scraped_proxy):
@@ -170,10 +172,10 @@ class Scraper:
                                     r.raise_for_status()
                                     return 'Null'
                             else:
-                                    print(f'{scraped_proxy} selected')
+                                    # print(f'{scraped_proxy} selected')
                                     return scraped_proxy
             except Exception as e:
-                print(f"not working with {e}")
+                # print(f"not working with {e}")
                 return 'Null'
 
         async def all_proxy_check(self, s, scraped_proxies):
@@ -198,13 +200,13 @@ class Scraper:
                 # htmls = asyncio.run(self.run(keyword=keyword))
                 proxies = asyncio.run(self.choose_proxy())
                 proxies = [value for value in proxies if value != 'Null']
-                print(proxies)
+                # print(proxies)
                 # proxies = ['103.121.149.69:8080', '146.56.136.237:9090', '43.132.184.228:8181', '88.255.217.37:8080', '140.120.15.146:8088']
                 self.proxies=proxies
                 htmls = asyncio.run(self.run())
                 return self.parser(htmls)
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 #         proxies = [
 #                 '142.214.181.36:8800',
 #                 '142.214.181.241:8800',
@@ -227,7 +229,7 @@ if __name__ == '__main__':
 #         ]
 #
 #         keyword = 'Kindermode'
-        start = perf_counter()
+#         start = perf_counter()
         # s = Scraper(proxies=proxies, useragent=useragent)
         # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         # htmls = asyncio.run(s.main(keyword=keyword))
@@ -235,8 +237,8 @@ if __name__ == '__main__':
         # for i in result:
         #         print(i)
         # print(len(result))
-        s = Scraper()
-        result = s.main()
-        print(result)
-        stop = perf_counter()
-        print(f'time taken: {stop - start}')
+        # s = Scraper()
+        # result = s.main()
+        # print(result)
+        # stop = perf_counter()
+        # print(f'time taken: {stop - start}')
